@@ -1,0 +1,21 @@
+{
+	"general": {
+		"logfilename": "donald.log"
+	},
+	"irc": {
+		"server": "irc.freenode.net",
+		"port": 6667,
+		"username": "Lamest",
+		"nickname": "LamestBot",
+		"realname": "I'm to lame to edit donald.conf",
+		"channel": "#oddr"
+	},
+	"twitter": {
+		"email": "you@domain.com",
+		"password": "p@$$w0rd"
+	},
+	"options": {
+		"display_self_tweets": false,
+		"allow_channel_tweets": true
+	}
+}

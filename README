@@ -1,0 +1,26 @@
+donald
+
+	This is an IRC bot that dumps Twitter updates to a channel.
+	For now, it only supports joining one channel.
+	
+	donald is based loosely on Mike Verdone's Python Twitter
+	Tools ircbot.py and the Twisted Words IRC example. Forgive
+	inefficiencies or long-winded code; this is my first Twisted
+	application (and I'm not much of a Python expert, either).
+
+USAGE
+
+	donald [configfile]
+
+CONFIGFILE
+
+	This is a JSON document with the bot's configuration options.
+	If no argument is specified on the command line, use donald.conf.
+	See donald.conf.example for a template. There is no warning
+	upon startup if something's missing, so try and get it right.
+
+DEPENDENCIES
+
+	simplejson
+	twitter - Mike Verdone's Python Twitter Tools
+	twisted - Twisted (including Twisted Words)

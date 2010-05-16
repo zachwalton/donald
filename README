@@ -8,6 +8,11 @@ donald
 	inefficiencies or long-winded code; this is my first Twisted
 	application (and I'm not much of a Python expert, either).
 
+AUTHOR
+
+	Roger Clark <rogerclark@gmail.com>
+	http://rogerclark.org/code/donald/
+
 USAGE
 
 	donald [configfile]

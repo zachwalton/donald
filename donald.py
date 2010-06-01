@@ -56,13 +56,12 @@ def sanitize_tweet_text(text):
 
 
 class TwitterState(object):
-	TIME_BETWEEN_UPDATES = 130
-
 	user = None
 
-	def __init__(self, email, password):
+	def __init__(self, email, password, interval):
 		self.twitter = Twitter(email, password)
-		reactor.callInThread(self._get_my_info())
+		self.interval = interval
+		reactor.callInThread(self._get_my_info)
 
 	def _get_my_info(self):
 		# retrieve our own user information from the twitter server
@@ -80,7 +79,7 @@ class TwitterState(object):
 
 	def schedule_check(self, callback):
 		self.callback = callback
-		reactor.callLater(self.TIME_BETWEEN_UPDATES, reactor.callInThread, self._check_for_updates)
+		reactor.callLater(self.interval, reactor.callInThread, self._check_for_updates)
 
 	def _check_for_updates(self):
 		args = dict()
@@ -144,7 +143,8 @@ class TwitterBot(irc.IRCClient):
 
 	def connectionMade(self):
 		irc.IRCClient.connectionMade(self)
-		self.twitter = TwitterState(self.config['twitter']['email'], self.config['twitter']['password'])
+		self.twitter = TwitterState(self.config['twitter']['email'],
+			self.config['twitter']['password'], self.config['twitter']['interval'])
 
 	def connectionLost(self, reason):
 		self.enable_tweets = False

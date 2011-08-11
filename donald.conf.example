@@ -11,7 +11,7 @@
 		"channel": "#oddr"
 	},
 	"twitter": {
-		"interval": "",
+		"interval": "15",
 		"oauth_key": "",
 		"oauth_secret": ""
 	},

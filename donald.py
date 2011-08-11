@@ -37,6 +37,8 @@ from twisted.python import log
 import urllib2
 from twitter.api import Twitter, TwitterError, TwitterHTTPError
 from twitter.oauth import OAuth, read_token_file
+import twitter
+import twitter.oauth_dance
 from dateutil.parser import parse
 from htmlentitydefs import name2codepoint
 import simplejson as json
@@ -61,9 +63,13 @@ class TwitterState(object):
 	CONSUMER_KEY = 'JUsaK5vMXismwD6g323HWg'
 	CONSUMER_SECRET = 'EKGSxMLzuGKaKwL30oxFVAukQN2S2QvBs2Q5hb1Ch0'            
 
-	def __init__(self, key, secret, interval):
+	def __init__(self, config):
+		if not config['twitter']['oauth_key'] or not config['twitter']['oauth_secret']: key, secret = self._oauth_init(self.CONSUMER_KEY, self.CONSUMER_SECRET, config)
+		else:
+			key = config['twitter']['oauth_key']
+			secret = config['twitter']['oauth_secret']
 		self.twitter = Twitter(auth=OAuth(key,secret,self.CONSUMER_KEY,self.CONSUMER_SECRET))
-		self.interval = interval
+		self.interval = config['twitter']['interval']
 		reactor.callInThread(self._get_my_info)
 
 	def _get_my_info(self):
@@ -72,6 +78,20 @@ class TwitterState(object):
 			self.user = self.twitter.account.verify_credentials()
 		except (TwitterError, TwitterHTTPError, urllib2.URLError):
 			log.err()
+	
+	def _oauth_init(self, key, secret, config):
+		#setup oauth key if it doesn't exist, dump to filename
+		twitterConnect = twitter.Twitter(auth=twitter.oauth.OAuth('','',key,secret),api_version=None,format='')
+		oauth_token, oauth_token_secret = twitter.oauth_dance.parse_oauth_tokens(twitterConnect.oauth.request_token())
+		print "To allow access to your Twitter account, please visit the following URL and click 'Accept':\r\nhttp://api.twitter.com/oauth/authorize?oauth_token=%s" % oauth_token
+		oauth_token_pin = input("Enter PIN: ")
+		twitterConnect = twitter.Twitter(auth=twitter.oauth.OAuth(oauth_token,oauth_token_secret,key,secret),api_version=None,format='')
+		oauth_token, oauth_token_secret = twitter.oauth_dance.parse_oauth_tokens(twitterConnect.oauth.access_token(oauth_verifier=oauth_token_pin))
+		config['twitter']['oauth_key']=oauth_token
+		config['twitter']['oauth_secret']=oauth_token_secret
+		#make the dump prettier, maybe with pprint.  also, pass filename in from __main__
+		json.dump(config,'donald.conf')
+		return oauth_token, oauth_token_secret
 
 	def reset_state(self):
 		"""Reset the state of the 'client.'"""
@@ -146,7 +166,7 @@ class TwitterBot(irc.IRCClient):
 
 	def connectionMade(self):
 		irc.IRCClient.connectionMade(self)
-		self.twitter = TwitterState(self.config['twitter']['oauth_key'], self.config['twitter']['oauth_secret'], self.config['twitter']['interval'])
+		self.twitter = TwitterState(self.config)
 
 	def connectionLost(self, reason):
 		self.enable_tweets = False
@@ -263,7 +283,6 @@ if __name__ == '__main__':
 		print >> sys.stderr, __doc__
 	
 		sys.exit(1)
-
 	log.startLogging(open(config['general']['logfilename'], 'a'))
 	# we're good to go...	
 	f = TwitterBotFactory(config)

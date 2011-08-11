@@ -1,3 +1,4 @@
+#!/usr/bin/python2.6
 """
 donald
 
@@ -35,6 +36,7 @@ from twisted.python import log
 
 import urllib2
 from twitter.api import Twitter, TwitterError, TwitterHTTPError
+from twitter.oauth import OAuth, read_token_file
 from dateutil.parser import parse
 from htmlentitydefs import name2codepoint
 import simplejson as json
@@ -43,8 +45,7 @@ import simplejson as json
 import os, time, sys, re
 
 
-CODE_BOLD = chr(0x02)                                                                                                                    
-
+CODE_BOLD = chr(0x02)
 
 def htmlentitydecode(s):
 	return re.sub('&(%s);' % '|'.join(name2codepoint), 
@@ -57,9 +58,11 @@ def sanitize_tweet_text(text):
 
 class TwitterState(object):
 	user = None
+	CONSUMER_KEY = 'JUsaK5vMXismwD6g323HWg'
+	CONSUMER_SECRET = 'EKGSxMLzuGKaKwL30oxFVAukQN2S2QvBs2Q5hb1Ch0'            
 
-	def __init__(self, email, password, interval):
-		self.twitter = Twitter(email, password)
+	def __init__(self, key, secret, interval):
+		self.twitter = Twitter(auth=OAuth(key,secret,self.CONSUMER_KEY,self.CONSUMER_SECRET))
 		self.interval = interval
 		reactor.callInThread(self._get_my_info)
 
@@ -79,7 +82,7 @@ class TwitterState(object):
 
 	def schedule_check(self, callback):
 		self.callback = callback
-		reactor.callLater(self.interval, reactor.callInThread, self._check_for_updates)
+		reactor.callLater(float(self.interval), reactor.callInThread, self._check_for_updates)
 
 	def _check_for_updates(self):
 		args = dict()
@@ -143,8 +146,7 @@ class TwitterBot(irc.IRCClient):
 
 	def connectionMade(self):
 		irc.IRCClient.connectionMade(self)
-		self.twitter = TwitterState(self.config['twitter']['email'],
-			self.config['twitter']['password'], self.config['twitter']['interval'])
+		self.twitter = TwitterState(self.config['twitter']['oauth_key'], self.config['twitter']['oauth_secret'], self.config['twitter']['interval'])
 
 	def connectionLost(self, reason):
 		self.enable_tweets = False
@@ -259,14 +261,13 @@ if __name__ == '__main__':
 		print >> sys.stderr, "Couldn't load configuration file %s" % (config_filename)
 		print >> sys.stderr, e
 		print >> sys.stderr, __doc__
-
+	
 		sys.exit(1)
 
 	log.startLogging(open(config['general']['logfilename'], 'a'))
-
-	# we're good to go...
+	# we're good to go...	
 	f = TwitterBotFactory(config)
 	reactor.connectTCP(config['irc']['server'], config['irc']['port'], f)
-
+	
 	# run bot
 	reactor.run()

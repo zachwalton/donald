@@ -11,8 +11,9 @@
 		"channel": "#oddr"
 	},
 	"twitter": {
-		"email": "you@domain.com",
-		"password": "p@$$w0rd"
+		"interval": "",
+		"oauth_key": "",
+		"oauth_secret": ""
 	},
 	"options": {
 		"display_self_tweets": false,

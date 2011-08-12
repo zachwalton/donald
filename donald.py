@@ -57,20 +57,19 @@ def htmlentitydecode(s):
 def sanitize_tweet_text(text):
 	return htmlentitydecode(text.replace('\n', ' '))
 
-
 class TwitterState(object):
 	user = None
 	CONSUMER_KEY = 'JUsaK5vMXismwD6g323HWg'
 	CONSUMER_SECRET = 'EKGSxMLzuGKaKwL30oxFVAukQN2S2QvBs2Q5hb1Ch0'            
 
-	def __init__(self, config):
-		if not config['twitter']['oauth_key'] or not config['twitter']['oauth_secret']: key, secret = self._oauth_init(self.CONSUMER_KEY, self.CONSUMER_SECRET, config)
+	def __init__(self, config=''):
+		if not config: pass
 		else:
 			key = config['twitter']['oauth_key']
 			secret = config['twitter']['oauth_secret']
-		self.twitter = Twitter(auth=OAuth(key,secret,self.CONSUMER_KEY,self.CONSUMER_SECRET))
-		self.interval = config['twitter']['interval']
-		reactor.callInThread(self._get_my_info)
+			self.twitter = Twitter(auth=OAuth(key,secret,self.CONSUMER_KEY,self.CONSUMER_SECRET))
+			self.interval = config['twitter']['interval']
+			reactor.callInThread(self._get_my_info)
 
 	def _get_my_info(self):
 		# retrieve our own user information from the twitter server
@@ -79,18 +78,14 @@ class TwitterState(object):
 		except (TwitterError, TwitterHTTPError, urllib2.URLError):
 			log.err()
 	
-	def _oauth_init(self, key, secret, config):
-		#setup oauth key if it doesn't exist, dump to filename
-		twitterConnect = twitter.Twitter(auth=twitter.oauth.OAuth('','',key,secret),api_version=None,format='')
+	def oauth_init(self):
+		#initializes OAuth token, returns token and secret.  should only be called externally
+		twitterConnect = twitter.Twitter(auth=twitter.oauth.OAuth('','',self.CONSUMER_KEY,self.CONSUMER_SECRET),api_version=None,format='')
 		oauth_token, oauth_token_secret = twitter.oauth_dance.parse_oauth_tokens(twitterConnect.oauth.request_token())
 		print "To allow access to your Twitter account, please visit the following URL and click 'Accept':\r\nhttp://api.twitter.com/oauth/authorize?oauth_token=%s" % oauth_token
-		oauth_token_pin = input("Enter PIN: ")
-		twitterConnect = twitter.Twitter(auth=twitter.oauth.OAuth(oauth_token,oauth_token_secret,key,secret),api_version=None,format='')
+		oauth_token_pin = raw_input("Enter PIN: ")
+		twitterConnect = twitter.Twitter(auth=twitter.oauth.OAuth(oauth_token,oauth_token_secret,self.CONSUMER_KEY,self.CONSUMER_SECRET),api_version=None,format='')
 		oauth_token, oauth_token_secret = twitter.oauth_dance.parse_oauth_tokens(twitterConnect.oauth.access_token(oauth_verifier=oauth_token_pin))
-		config['twitter']['oauth_key']=oauth_token
-		config['twitter']['oauth_secret']=oauth_token_secret
-		#make the dump prettier, maybe with pprint.  also, pass filename in from __main__
-		json.dump(config,'donald.conf')
 		return oauth_token, oauth_token_secret
 
 	def reset_state(self):
@@ -283,6 +278,17 @@ if __name__ == '__main__':
 		print >> sys.stderr, __doc__
 	
 		sys.exit(1)
+
+	#we need to check for the oauth key before reactor.run() is called so we can accept user input
+	if not config['twitter']['oauth_key'] or not config['twitter']['oauth_secret']: 
+		key, secret = TwitterState.oauth_init(TwitterState())
+		config['twitter']['oauth_key'] = key
+		config['twitter']['oauth_secret'] = secret
+		json.dump(config,open(config_filename,'w'), indent=4)
+		print "Key added.  Run donald.py again to activate bot."
+		sys.exit(0)
+	
+
 	log.startLogging(open(config['general']['logfilename'], 'a'))
 	# we're good to go...	
 	f = TwitterBotFactory(config)

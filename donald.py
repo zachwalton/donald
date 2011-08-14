@@ -1,3 +1,4 @@
+#!/usr/bin/python2.6
 """
 donald
 
@@ -79,12 +80,20 @@ class TwitterState(object):
 	
 	def oauth_init(self):
 		#initializes OAuth token, returns token and secret.  should only be called externally
-		twitterConnect = twitter.Twitter(auth=twitter.oauth.OAuth('','',self.CONSUMER_KEY,self.CONSUMER_SECRET),api_version=None,format='')
-		oauth_token, oauth_token_secret = twitter.oauth_dance.parse_oauth_tokens(twitterConnect.oauth.request_token())
+		try: 
+			twitterConnect = twitter.Twitter(auth=twitter.oauth.OAuth('','',self.CONSUMER_KEY,self.CONSUMER_SECRET),api_version=None,format='')
+			oauth_token, oauth_token_secret = twitter.oauth_dance.parse_oauth_tokens(twitterConnect.oauth.request_token())
+		except:
+			print >> sys.stderr, "Problem connecting to Twitter.  Is Twitter having issues?"
+			sys.exit(1)
 		print "To allow access to your Twitter account, please visit the following URL and click 'Accept':\r\nhttp://api.twitter.com/oauth/authorize?oauth_token=%s" % oauth_token
 		oauth_token_pin = raw_input("Enter PIN: ")
-		twitterConnect = twitter.Twitter(auth=twitter.oauth.OAuth(oauth_token,oauth_token_secret,self.CONSUMER_KEY,self.CONSUMER_SECRET),api_version=None,format='')
-		oauth_token, oauth_token_secret = twitter.oauth_dance.parse_oauth_tokens(twitterConnect.oauth.access_token(oauth_verifier=oauth_token_pin))
+		try: 
+			twitterConnect = twitter.Twitter(auth=twitter.oauth.OAuth(oauth_token,oauth_token_secret,self.CONSUMER_KEY,self.CONSUMER_SECRET),api_version=None,format='')
+			oauth_token, oauth_token_secret = twitter.oauth_dance.parse_oauth_tokens(twitterConnect.oauth.access_token(oauth_verifier=oauth_token_pin))
+		except: 
+			print >> sys.stderr, "Error adding key.  Did you enter the correct PIN?"
+			sys.exit(1)
 		return oauth_token, oauth_token_secret
 
 	def reset_state(self):
